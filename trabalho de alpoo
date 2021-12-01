@@ -1,0 +1,142 @@
+package jwizard01;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import javax.swing.JOptionPane;
+
+
+public class Conection {
+    private Connection con;
+    
+    Conection(){
+        try {                        
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            con = DriverManager.getConnection("jdbc:mysql://localhost/assistente","root","");            
+            //st.executeUpdate("insert into alunos values(default, '" + imprimir1 + "', '" + imprimir2 + "', '0','0')");
+            JOptionPane.showMessageDialog(null, "Os dados foram inseridos com sucesso!");
+        } catch (ClassNotFoundException ex) {
+            JOptionPane.showMessageDialog(null, "O Driver não está na biblioteca");
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "Erro ns conexão com o banco de dados!");
+        }
+    }
+    
+    public int executaSQL(String sql){
+        try {
+            Statement stm = con.createStatement();
+            int res = stm.executeUpdate(sql);
+            con.close();
+            return res;
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(null, "O insert deu ruim!");
+            return 0;
+        }
+        
+    }
+
+
+package jwizard01;
+
+import jandl.wizard.Data;
+import jandl.wizard.WizardBase;
+import jandl.wizard.WizardFactory;
+import jandl.wizard.WizardText;
+import javax.swing.SwingUtilities;
+
+
+public class Principal {
+
+    
+    public static void main(String[] args) {
+        
+        
+        // TODO code application logic here
+        //Janela1
+        WizardBase janela1 = WizardFactory.createBase("FACULDADE UNIP", "uniplogo1.png");        
+        // Janela3
+        String[] tags = {"Nome", "curso"};
+        String[] labels = {"Nome do aluno", "curso"};
+        String[] tips = {"Digite seu nome completo", "Digite o curso"};
+        WizardBase janela2 = WizardFactory.createField("Formulário", tags, labels, tips);
+        WizardBase janela3 = WizardFactory.createText("matrícula", "uniplogo.jpg", true);
+        String[] tags1 = {"nota1", "nota2"};
+        String[] labels1 = {"nota 1", "nota 2"};
+        String[] tips1 = {"Digite sua nota 1", "Digite sua nota 2"};
+        WizardBase janela4 = WizardFactory.createField("notas do aluno", tags1, labels1, tips1);
+        WizardBase janela5 = WizardFactory.createText("Resultados", "uniplogo.jpg", true);
+        // encadeamento
+        janela1.nextWizard(janela2);
+        janela2.nextWizard(janela3);
+        janela3.nextWizard(janela4);
+        janela4.nextWizard(janela5);
+        
+        // Pós e Pré-processador
+        janela1.addPostProcessor((wiz)->janela1PostProcessor(wiz));
+        janela2.addPostProcessor((wiz)->janela1PostProcessor(wiz));
+        janela3.addPreProcessor((wiz)->janela3PreProcessor(wiz));
+        janela3.addPostProcessor((wiz)->janela1PostProcessor(wiz));        
+        janela4.addPostProcessor((wiz)->janela1PostProcessor(wiz));
+        janela5.addPreProcessor((wiz)->janela5PreProcessor(wiz));
+        janela5.addPostProcessor((wiz)->janela1PostProcessor(wiz)); 
+        
+        // Ativar a aplicação
+        SwingUtilities.invokeLater(()-> janela1.setVisible(true));
+        
+        
+        
+        
+    }
+
+    private static void janela1PostProcessor(WizardBase wiz) {
+        
+    }
+
+    private static void janela3PreProcessor(WizardBase wiz) {
+        Data data = Data.instance();
+        String nome = data.getAsString("Wizard2.fieldPane0.Nome");
+        System.out.println("Nome = " + nome);            
+        String curso = data.getAsString("Wizard2.fieldPane0.curso");
+        WizardText wt = (WizardText)wiz;
+        wt.setText("Nome = " + nome + "\n\n");
+        wt.append("Curso = " + curso + "\n\n");
+        
+        Conection con = new Conection();
+        String sql = "insert into alunos values(default, '" + nome + "', '" + curso + "')";
+        int res = con.executaSQL(sql);
+        if(res > 0){
+            System.out.println("Cadastrado com sucesso!!!");
+        }else{
+            System.out.println("Erro durante o cadastro!!!");
+        }
+        
+    }
+    
+    private static void janela5PreProcessor(WizardBase wiz){
+        Data data = Data.instance();
+        double nota1 = data.getAsDouble("Wizard4.fieldPane0.nota1");
+        System.out.println("Nota1 = " + nota1);
+        double nota2 = data.getAsDouble("Wizard4.fieldPane0.nota2");
+        double media = (nota1 + nota2) / 2;
+        String nome = data.getAsString("Wizard2.fieldPane0.Nome");
+        System.out.println("Nome = " + nome);            
+        String curso = data.getAsString("Wizard2.fieldPane0.curso");
+        WizardText wt = (WizardText)wiz;
+        wt.setText("Nome = " + nome + "\n\n");
+        wt.append("Curso = " + curso + "\n\n");
+        wt.append("Nota1 = " + nota1 + "\n\n");
+        wt.append("Nota2 = " + nota2 + "\n\n");
+        wt.append("Média = " + media + "\n\n");
+        
+        Conection con = new Conection();
+        String sql = "insert into materia values(default, '" + nota1 + "', '" + nota2 + "', '" + media + "')";
+        int res = con.executaSQL(sql);
+        if(res > 0){
+            System.out.println("Cadastrado com sucesso!!!");
+        }else{
+            System.out.println("Erro durante o cadastro!!!");
+        }
+    }
+}
+
